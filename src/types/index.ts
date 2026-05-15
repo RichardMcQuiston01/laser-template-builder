@@ -72,3 +72,20 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+/** Returned by the upload handler after scanning a file for tokens. */
+export interface UploadResult {
+  filePath: string;
+  sourceFormat: string;
+  detectedVariables: TemplateVariable[];
+}
+
+/** Payload passed to the save handler when creating a new template. */
+export interface SaveTemplateData {
+  name: string;
+  description?: string;
+  categoryId?: string;
+  filePath: string;
+  sourceFormat: string;
+  variables: TemplateVariable[];
+}
