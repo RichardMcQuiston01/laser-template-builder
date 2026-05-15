@@ -30,7 +30,9 @@ export function computeFitFontSize(
   el.textContent = text || ' ';
 
   const MIN = 8;
-  const MAX = 200;
+  // MAX must scale with the box — a hardcoded 200 is fine for screen-sized boxes
+  // but underestimates for large natural-image dimensions (e.g. 4000px wide photo).
+  const MAX = Math.max(200, Math.ceil(boxHeightPx));
   let lo = MIN;
   let hi = MAX;
   let result = MIN;

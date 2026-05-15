@@ -12,9 +12,21 @@ import type { TemplateVariable } from '../../types';
  * Reads a .xcs ArrayBuffer and returns the raw project.json content string
  * and a map of all other files (SVG layers, thumbnail, etc.).
  */
+function assertZipMagic(buffer: ArrayBuffer): void {
+  if (buffer.byteLength < 4) throw new Error('File is too small to be a valid .xcs archive.');
+  const magic = new DataView(buffer).getUint32(0, false);
+  if (magic !== 0x504b0304 && magic !== 0x504b0506 && magic !== 0x504b0708) {
+    throw new Error(
+      'This file does not appear to be a valid .xcs archive. ' +
+      'Only .xcs files exported from xTool Creative Space are supported.',
+    );
+  }
+}
+
 export async function readXcsArchive(
   buffer: ArrayBuffer,
 ): Promise<{ projectJson: string; assets: Map<string, string | Uint8Array> }> {
+  assertZipMagic(buffer);
   const zip = await JSZip.loadAsync(buffer);
   const assets = new Map<string, string | Uint8Array>();
   let projectJson = '';
