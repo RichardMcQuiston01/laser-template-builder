@@ -10,7 +10,7 @@ npm install laser-template-builder
 pnpm add laser-template-builder
 ```
 
-**Peer dependencies:** React 18 and react-dom 18 are required.
+**Peer dependencies:** React 18 or 19 and the matching react-dom are required.
 
 ## Tailwind CSS setup
 
@@ -248,7 +248,7 @@ const output = applySubstitution(svgString, template.variables, { '{{name}}': 'A
 import {
   validateSvg, extractSvgTokens, renderSvgFile,
   validateLightBurnXml, extractLightBurnTokens, renderLightBurnFile,
-  readXcsArchive, extractXcsTokens, renderXcsFile,
+  validateXcs, readXcsFile, extractXcsTokens, renderXcsFile,
 } from 'laser-template-builder';
 
 // SVG
@@ -259,10 +259,11 @@ const output = renderSvgFile(svgString, variables, values); // string
 const tokens = extractLightBurnTokens(xmlString);
 const output = renderLightBurnFile(xmlString, variables, values);
 
-// XCS (async — reads/writes ZIP archive)
-const { projectJson, svgFiles, otherAssets } = await readXcsArchive(arrayBuffer);
-const tokens = extractXcsTokens(projectJson, svgFiles);
-const blob   = await renderXcsFile(arrayBuffer, variables, values);
+// XCS
+const valid  = validateXcs(arrayBuffer);                      // boolean
+const json   = readXcsFile(arrayBuffer);                      // raw JSON string
+const tokens = extractXcsTokens(arrayBuffer);                 // string[]
+const bytes  = renderXcsFile(arrayBuffer, variables, values); // Uint8Array
 ```
 
 ### Image export

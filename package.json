@@ -22,8 +22,8 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "fast-xml-parser": "^5.8.0",
-    "jszip": "^3.10.1"
+    "@richardmcquiston01/unofficial-xcs-writer": "^0.1.0",
+    "fast-xml-parser": "^5.8.0"
   },
   "sideEffects": false,
   "peerDependencies": {

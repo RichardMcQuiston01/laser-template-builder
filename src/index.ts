@@ -27,7 +27,7 @@ export { isTextboxVariable, isTextVariable } from './lib/utils/variables';
 // Format handlers
 export { extractSvgTokens, renderSvgFile, validateSvg } from './lib/formats/svg';
 export { extractLightBurnTokens, renderLightBurnFile, validateLightBurnXml } from './lib/formats/lightburn';
-export { readXcsArchive, extractXcsTokens, renderXcsFile } from './lib/formats/xcs';
+export { validateXcs, readXcsFile, extractXcsTokens, renderXcsFile } from './lib/formats/xcs';
 export { renderImageAsSvg, renderImageAsPng } from './lib/formats/imageExport';
 
 // UI primitives
