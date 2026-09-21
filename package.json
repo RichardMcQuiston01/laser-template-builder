@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.0",
+    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.1",
     "fast-xml-parser": "^5.8.0"
   },
   "sideEffects": false,
