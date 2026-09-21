@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@richardmcquiston01/unofficial-xcs-writer':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
       fast-xml-parser:
         specifier: ^5.8.0
         version: 5.10.0
@@ -208,8 +208,8 @@ packages:
   '@nodable/entities@2.2.0':
     resolution: {integrity: sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg==}
 
-  '@richardmcquiston01/unofficial-xcs-writer@0.8.0':
-    resolution: {integrity: sha512-AlYcT8oaxJNa5fYUDjs8LRtpDFNO6LM4yv49v6+vsc/mL7VQh/wPd35wOabdK/pXd6MU52r8D39c5BgVk3DxNg==}
+  '@richardmcquiston01/unofficial-xcs-writer@0.8.1':
+    resolution: {integrity: sha512-lGZaD8y6n5J/iNOiBQjhwmxFukT4VTYGUJiiiCTFYigsLxMAoyf6oDkHLTv+8M7g3WSK9bAhp7WZxWGf8jfyoA==}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     resolution: {integrity: sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg==}
@@ -705,7 +705,7 @@ snapshots:
 
   '@nodable/entities@2.2.0': {}
 
-  '@richardmcquiston01/unofficial-xcs-writer@0.8.0':
+  '@richardmcquiston01/unofficial-xcs-writer@0.8.1':
     dependencies:
       fflate: 0.8.3
       opentype.js: 2.0.0
