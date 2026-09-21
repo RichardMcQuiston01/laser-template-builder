@@ -24,11 +24,13 @@ jobs:
 
       - run: npm ci
 
-      # A release tagged v0.3.1 must ship package.json 0.3.1 -- and this must
-      # also hold for a manual workflow_dispatch run, or it could publish an
-      # untagged version. Runs unconditionally: for workflow_dispatch off a
-      # branch, GITHUB_REF_NAME won't start with "v" and will fail closed.
-      - name: Check ref matches package.json version
+      # A release tagged v0.3.1 must ship package.json 0.3.1. Only runs for
+      # an actual GitHub Release -- this repo has no tool/process that
+      # creates a tagged Release, so releases go out via workflow_dispatch
+      # off main; GITHUB_REF_NAME there is "main", which can never match a
+      # version, so this check must not run for that event.
+      - name: Check release tag matches package.json version
+        if: github.event_name == 'release'
         run: |
           tag="${GITHUB_REF_NAME#v}"
           pkg="$(node -p "require('./package.json').version")"
