@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@richardmcquiston01/unofficial-xcs-writer':
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.8.0
+        version: 0.8.0
       fast-xml-parser:
         specifier: ^5.8.0
         version: 5.10.0
@@ -208,8 +208,8 @@ packages:
   '@nodable/entities@2.2.0':
     resolution: {integrity: sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg==}
 
-  '@richardmcquiston01/unofficial-xcs-writer@0.3.0':
-    resolution: {integrity: sha512-dg8SFPt8ThzdSaPbUMGJuHlULQ8Ri/tNGKacPYST5OY07iA5j6w0YJF9SX0+vxINA2y0sbiALL9eGhnEY9EBCQ==}
+  '@richardmcquiston01/unofficial-xcs-writer@0.8.0':
+    resolution: {integrity: sha512-AlYcT8oaxJNa5fYUDjs8LRtpDFNO6LM4yv49v6+vsc/mL7VQh/wPd35wOabdK/pXd6MU52r8D39c5BgVk3DxNg==}
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
     resolution: {integrity: sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg==}
@@ -431,6 +431,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   fix-dts-default-cjs-exports@1.0.1:
     resolution: {integrity: sha512-pVIECanWFC61Hzl2+oOCtoJ3F17kglZC/6N94eRWycFgBH35hHx0Li604ZIzhseh97mf2p0cv7vVrOZGoqhlEg==}
@@ -702,8 +705,9 @@ snapshots:
 
   '@nodable/entities@2.2.0': {}
 
-  '@richardmcquiston01/unofficial-xcs-writer@0.3.0':
+  '@richardmcquiston01/unofficial-xcs-writer@0.8.0':
     dependencies:
+      fflate: 0.8.3
       opentype.js: 2.0.0
 
   '@rollup/rollup-android-arm-eabi@4.62.2':
@@ -869,6 +873,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
+
+  fflate@0.8.3: {}
 
   fix-dts-default-cjs-exports@1.0.1:
     dependencies:
