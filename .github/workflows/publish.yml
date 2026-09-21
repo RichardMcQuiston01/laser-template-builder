@@ -1,0 +1,65 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - run: npm ci
+
+      # A release tagged v0.3.1 must ship package.json 0.3.1 -- and this must
+      # also hold for a manual workflow_dispatch run, or it could publish an
+      # untagged version. Runs unconditionally: for workflow_dispatch off a
+      # branch, GITHUB_REF_NAME won't start with "v" and will fail closed.
+      - name: Check ref matches package.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Ref '${GITHUB_REF_NAME}' does not match package.json version '${pkg}'"
+            exit 1
+          fi
+
+      # Lets a re-run (or a release whose version was already published some
+      # other way, e.g. a manual workflow_dispatch) succeed instead of
+      # failing on npm's "cannot publish over previously published version".
+      - name: Check if this version is already on npm
+        id: check
+        run: |
+          pkg="$(node -p "require('./package.json').name")"
+          ver="$(node -p "require('./package.json').version")"
+          if npm view "$pkg@$ver" version >/dev/null 2>&1; then
+            echo "::notice::$pkg@$ver is already on npm -- skipping publish."
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Build without the publish token in scope so it can't read it.
+      - run: npm run build
+        if: steps.check.outputs.already_published != 'true'
+
+      # prepublishOnly would otherwise re-run build with NODE_AUTH_TOKEN in
+      # the environment; --ignore-scripts skips it since the previous step
+      # already did the job.
+      - run: npm publish --access public --provenance --ignore-scripts
+        if: steps.check.outputs.already_published != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
