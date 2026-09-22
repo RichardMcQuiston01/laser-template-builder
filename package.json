@@ -22,8 +22,8 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.1",
-    "fast-xml-parser": "^5.8.0"
+    "@richardmcquiston01/unofficial-lb-writer": "git+https://github.com/RichardMcQuiston01/unofficial-lb-writer.git#8c5c99a1eacec49b5518b71e2cea00db08bbf5ce",
+    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.1"
   },
   "sideEffects": false,
   "peerDependencies": {
@@ -50,5 +50,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/RichardMcQuiston01/laser-template-builder.git"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@richardmcquiston01/unofficial-lb-writer"
+    ]
   }
 }
