@@ -1,26 +1,15 @@
 // Parses and writes LightBurn .lbrn2 files (XML format).
 
-import { XMLParser, XMLBuilder, type X2jOptions, type XmlBuilderOptions } from 'fast-xml-parser';
-import { applySubstitution, extractTokens } from '../utils/substitution';
+import {
+  assertLbrn2Format,
+  extractLbrn2Tokens as lbrn2Extract,
+  renderLbrn2File as lbrn2Render,
+} from '@richardmcquiston01/unofficial-lb-writer';
 import type { TemplateVariable } from '../../types';
-
-const PARSER_OPTIONS: X2jOptions = {
-  ignoreAttributes: false,
-  attributeNamePrefix: '@_',
-  preserveOrder: true,
-  trimValues: false,
-};
-
-const BUILDER_OPTIONS: XmlBuilderOptions = {
-  ignoreAttributes: false,
-  attributeNamePrefix: '@_',
-  preserveOrder: true,
-  format: true,
-};
 
 /** Scans a .lbrn2 XML string and returns all {{token}} placeholders found. */
 export function extractLightBurnTokens(xmlContent: string): string[] {
-  return extractTokens(xmlContent);
+  return lbrn2Extract(xmlContent);
 }
 
 /**
@@ -32,21 +21,14 @@ export function renderLightBurnFile(
   variables: TemplateVariable[],
   values: Record<string, string>,
 ): string {
-  return applySubstitution(xmlContent, variables, values);
+  return lbrn2Render(xmlContent, variables, values);
 }
 
 /** Minimal structural validation — checks that the root element is <LightBurnProject>. */
 export function validateLightBurnXml(xmlContent: string): boolean {
-  const parser = new XMLParser(PARSER_OPTIONS);
-
   try {
-    const parsed = parser.parse(xmlContent) as unknown[];
-    return Array.isArray(parsed) && parsed.some(
-      (node) =>
-        typeof node === 'object' &&
-        node !== null &&
-        'LightBurnProject' in node,
-    );
+    assertLbrn2Format(xmlContent);
+    return true;
   } catch {
     return false;
   }

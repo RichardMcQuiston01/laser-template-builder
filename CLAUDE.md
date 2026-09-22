@@ -40,8 +40,8 @@ src/
 
 **2. Format Handlers** (`lib/formats/`)
 - `svg.ts` — Plain SVG templates (simple string substitution)
-- `lightburn.ts` — `.lbrn2` XML (uses `fast-xml-parser` for validation)
-- `xcs.ts` — xTool `.xcs` archives (ZIP with `project.json` + SVG layers; uses `jszip`)
+- `lightburn.ts` — `.lbrn2` XML; delegates to `@richardmcquiston01/unofficial-lb-writer`
+- `xcs.ts` — xTool `.xcs` (plain JSON); delegates to `@richardmcquiston01/unofficial-xcs-writer`
 - `imageExport.ts` — Converts image templates to SVG/PNG with text overlays
 
 **3. React Components** (`components/`)
@@ -68,9 +68,11 @@ src/
 ## Design Patterns & Constraints
 
 ### Token Substitution
-- Tokens are literal strings: `{{tokenName}}`
+- Tokens are literal strings: `{{tokenName}}` in file content
+- `TemplateVariable.token` is braced (`{{tokenName}}`) for SVG (local `extractTokens`), but
+  bare (`tokenName`, no braces) for LBRN2/XCS, since both delegate token extraction to their
+  respective `unofficial-*-writer` sibling libraries, which use the bare-name convention
 - Regex-escaped during replacement to handle special chars in token names
-- Works identically across all formats (SVG, XML, JSON)
 
 ### Image Templating (IMAGE format)
 - Stores image file as a binary blob; textbox layout as `ImageTextboxVariable[]`
@@ -84,10 +86,11 @@ src/
 - Error states captured and displayed inline; errors thrown from callbacks surface as alerts
 
 ### XCS Format Handling
-- Async-only (ZIP parsing)
-- Validates ZIP magic number before parsing
-- Preserves non-SVG/non-JSON assets (binary) during re-export
-- Applies substitution to both `project.json` and embedded SVG files
+- `.xcs` files are plain UTF-8 JSON (not ZIP archives) — handled synchronously via
+  `@richardmcquiston01/unofficial-xcs-writer`'s `assertXcsFormat`/`readXcsFile`/
+  `extractXcsTokens`/`renderXcsFile`
+- Token substitution and glyph-outline regeneration for `TEXT` displays is handled entirely
+  inside that library; this repo only supplies `TemplateVariable[]`/values
 
 ## Important Implementation Details
 
@@ -106,5 +109,5 @@ src/
 - **Entry point**: `src/index.ts`
 - **Output formats**: ESM (`dist/index.js`) + CJS (`dist/index.cjs`) + types (`dist/index.d.ts`)
 - **External deps**: `react` and `react-dom` are peer dependencies (not bundled)
-- **Internal deps**: `fast-xml-parser`, `jszip` (bundled)
+- **Internal deps**: `@richardmcquiston01/unofficial-lb-writer`, `@richardmcquiston01/unofficial-xcs-writer` (bundled)
 - **Target**: ES2020 (modern browsers)
