@@ -28,7 +28,7 @@ const sizeClasses: Record<Size, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = 'primary', size = 'md', loading = false, disabled, className = '', children, ...rest },
+    { variant = 'primary', size = 'md', loading = false, disabled, className = '', children, type = 'button', ...rest },
     ref,
   ) => {
     const isDisabled = disabled || loading;
@@ -36,6 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={isDisabled}
         className={[
           'inline-flex items-center justify-center gap-2 rounded-lg font-medium',

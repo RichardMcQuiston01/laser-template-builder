@@ -36,6 +36,17 @@ const BOX_COLORS = [
 
 const MIN_SIZE = 5; // percent
 
+let fallbackTokenCounter = 0;
+
+/** Returns a unique textbox token, without requiring a secure context. */
+function createTextboxToken(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  fallbackTokenCounter += 1;
+  return `box-${Date.now().toString(36)}-${fallbackTokenCounter}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface ImagePlacementEditorProps {
   imageUrl: string;
   boxes: ImageTextboxVariable[];
@@ -60,7 +71,7 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
     const offset = boxes.length * 5;
     const newBox: ImageTextboxVariable = {
       kind: 'textbox',
-      token: crypto.randomUUID().slice(0, 8),
+      token: createTextboxToken(),
       label: `Field ${boxes.length + 1}`,
       defaultValue: '',
       x: 25 + (offset % 30),
@@ -77,32 +88,34 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
     [boxes, onChange],
   );
 
-  const handleBoxMouseDown = useCallback(
-    (e: React.MouseEvent, token: string) => {
+  const handleBoxPointerDown = useCallback(
+    (e: React.PointerEvent, token: string) => {
       e.preventDefault();
       e.stopPropagation();
       const box = boxes.find((b) => b.token === token);
       if (!box) return;
+      overlayRef.current?.setPointerCapture(e.pointerId);
       const { px, py } = toPercent(e.clientX, e.clientY);
       setDragMode({ kind: 'move', token, startMouseX: px, startMouseY: py, startBox: { ...box } });
     },
     [boxes, toPercent],
   );
 
-  const handleHandleMouseDown = useCallback(
-    (e: React.MouseEvent, token: string, handle: ResizeHandle) => {
+  const handleHandlePointerDown = useCallback(
+    (e: React.PointerEvent, token: string, handle: ResizeHandle) => {
       e.preventDefault();
       e.stopPropagation();
       const box = boxes.find((b) => b.token === token);
       if (!box) return;
+      overlayRef.current?.setPointerCapture(e.pointerId);
       const { px, py } = toPercent(e.clientX, e.clientY);
       setDragMode({ kind: 'resize', token, handle, startMouseX: px, startMouseY: py, startBox: { ...box } });
     },
     [boxes, toPercent],
   );
 
-  const handleOverlayMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handleOverlayPointerMove = useCallback(
+    (e: React.PointerEvent) => {
       if (!dragMode) return;
       const { px, py } = toPercent(e.clientX, e.clientY);
       const dx = px - dragMode.startMouseX;
@@ -121,35 +134,26 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
             };
           }
 
-          // Resize
-          let { x, y, width, height } = sb;
+          // Resize: the edges being dragged move; the opposite edges stay anchored.
           const h = dragMode.handle;
+          let left = sb.x;
+          let right = sb.x + sb.width;
+          let top = sb.y;
+          let bottom = sb.y + sb.height;
 
-          if (h === 'tl' || h === 'ml' || h === 'bl') { x = sb.x + dx; width = sb.width - dx; }
-          if (h === 'tr' || h === 'mr' || h === 'br') { width = sb.width + dx; }
-          if (h === 'tl' || h === 'tm' || h === 'tr') { y = sb.y + dy; height = sb.height - dy; }
-          if (h === 'bl' || h === 'bm' || h === 'br') { height = sb.height + dy; }
+          if (h === 'tl' || h === 'ml' || h === 'bl') left = Math.max(0, Math.min(right - MIN_SIZE, sb.x + dx));
+          if (h === 'tr' || h === 'mr' || h === 'br') right = Math.min(100, Math.max(left + MIN_SIZE, right + dx));
+          if (h === 'tl' || h === 'tm' || h === 'tr') top = Math.max(0, Math.min(bottom - MIN_SIZE, sb.y + dy));
+          if (h === 'bl' || h === 'bm' || h === 'br') bottom = Math.min(100, Math.max(top + MIN_SIZE, bottom + dy));
 
-          if (width < MIN_SIZE) {
-            if (h === 'tl' || h === 'ml' || h === 'bl') x = sb.x + sb.width - MIN_SIZE;
-            width = MIN_SIZE;
-          }
-          if (height < MIN_SIZE) {
-            if (h === 'tl' || h === 'tm' || h === 'tr') y = sb.y + sb.height - MIN_SIZE;
-            height = MIN_SIZE;
-          }
-
-          x = Math.max(0, Math.min(100 - width, x));
-          y = Math.max(0, Math.min(100 - height, y));
-
-          return { ...b, x, y, width, height };
+          return { ...b, x: left, y: top, width: right - left, height: bottom - top };
         }),
       );
     },
     [dragMode, boxes, onChange, toPercent],
   );
 
-  const handleOverlayMouseUp = useCallback(() => setDragMode(null), []);
+  const handleOverlayPointerUp = useCallback(() => setDragMode(null), []);
 
   const handleLabelChange = useCallback(
     (token: string, label: string) =>
@@ -204,10 +208,10 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
         <div
           ref={overlayRef}
           className="absolute inset-0"
-          style={{ cursor: isDragging ? 'grabbing' : 'default' }}
-          onMouseMove={handleOverlayMouseMove}
-          onMouseUp={handleOverlayMouseUp}
-          onMouseLeave={handleOverlayMouseUp}
+          style={{ cursor: isDragging ? 'grabbing' : 'default', touchAction: 'none' }}
+          onPointerMove={handleOverlayPointerMove}
+          onPointerUp={handleOverlayPointerUp}
+          onPointerCancel={handleOverlayPointerUp}
         >
           {boxes.map((box, idx) => (
             <div
@@ -219,8 +223,9 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
                 width: `${box.width}%`,
                 height: `${box.height}%`,
                 cursor: isDragging ? 'grabbing' : 'grab',
+                touchAction: 'none',
               }}
-              onMouseDown={(e) => handleBoxMouseDown(e, box.token)}
+              onPointerDown={(e) => handleBoxPointerDown(e, box.token)}
             >
               <span className="pointer-events-none absolute left-1 top-0.5 text-[10px] font-semibold text-white drop-shadow">
                 {box.label || `Box ${idx + 1}`}
@@ -229,12 +234,12 @@ export function ImagePlacementEditor({ imageUrl, boxes, onChange }: ImagePlaceme
               {(Object.keys(HANDLE_POSITIONS) as ResizeHandle[]).map((handle) => (
                 <div
                   key={handle}
-                  className="absolute h-[10px] w-[10px] rounded-sm border border-white bg-blue-500 shadow"
+                  className="absolute h-4 w-4 rounded-sm border border-white bg-blue-500 shadow"
                   style={{
                     ...HANDLE_POSITIONS[handle],
                     cursor: HANDLE_CURSORS[handle],
                   }}
-                  onMouseDown={(e) => handleHandleMouseDown(e, box.token, handle)}
+                  onPointerDown={(e) => handleHandlePointerDown(e, box.token, handle)}
                 />
               ))}
             </div>

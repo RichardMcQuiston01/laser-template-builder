@@ -14,6 +14,27 @@ interface TemplateHeaderProps {
   onConvertToImage: () => Promise<void>;
 }
 
+const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
+
+/**
+ * Returns `href` when it is a relative path/fragment or an http(s) URL;
+ * otherwise "#". Whitespace and control characters are stripped first because
+ * browsers ignore them inside a scheme ("java\tscript:").
+ */
+export function getSafeHref(href: string): string {
+  const compact = href.replace(/[\u0000-\u0020]/g, '');
+  if (!compact) return '#';
+  if (SCHEME_PATTERN.test(compact)) {
+    const scheme = compact.slice(0, compact.indexOf(':')).toLowerCase();
+    return scheme === 'http' || scheme === 'https' ? href.trim() : '#';
+  }
+  return href.trim();
+}
+
+function describeError(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
 export function TemplateHeader({
   template,
   backHref = '#',
@@ -32,7 +53,21 @@ export function TemplateHeader({
   const [currentFormat, setCurrentFormat] = useState(template.sourceFormat);
   const [isConverting, setIsConverting] = useState(false);
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  // Blocks the blur that follows Enter/Escape (the input unmounts) from saving a second time.
+  const renameSettledRef = useRef(false);
+
+  // Reset local state when the host shows a different template without remounting.
+  useEffect(() => {
+    setName(template.name);
+    setRenameValue(template.name);
+    setCurrentFormat(template.sourceFormat);
+    setIsRenaming(false);
+    setConfirmingDelete(false);
+    setActionError(null);
+  }, [template.id, template.name, template.sourceFormat]);
 
   useEffect(() => {
     if (isRenaming) {
@@ -42,28 +77,36 @@ export function TemplateHeader({
   }, [isRenaming]);
 
   const startRename = useCallback(() => {
+    renameSettledRef.current = false;
+    setActionError(null);
     setRenameValue(name);
     setIsRenaming(true);
   }, [name]);
 
   const cancelRename = useCallback(() => {
+    renameSettledRef.current = true;
     setIsRenaming(false);
     setRenameValue(name);
   }, [name]);
 
   const saveRename = useCallback(async () => {
+    if (renameSettledRef.current) return;
     const trimmed = renameValue.trim();
     if (!trimmed || trimmed === name) {
       cancelRename();
       return;
     }
+    renameSettledRef.current = true;
     setIsSavingName(true);
+    setActionError(null);
     try {
       await onRename(trimmed);
       setName(trimmed);
       setIsRenaming(false);
-    } catch {
+    } catch (err) {
       // leave rename mode open so user can retry
+      renameSettledRef.current = false;
+      setActionError(describeError(err, 'Rename failed'));
     } finally {
       setIsSavingName(false);
     }
@@ -79,11 +122,13 @@ export function TemplateHeader({
 
   const handleConvertToImage = useCallback(async () => {
     setIsConverting(true);
+    setActionError(null);
     try {
       await onConvertToImage();
       setCurrentFormat('IMAGE');
-    } catch {
+    } catch (err) {
       // button stays visible for retry
+      setActionError(describeError(err, 'Conversion to an image template failed'));
     } finally {
       setIsConverting(false);
     }
@@ -91,19 +136,21 @@ export function TemplateHeader({
 
   const handleDelete = useCallback(async () => {
     setIsDeletingTemplate(true);
+    setActionError(null);
     try {
       await onDelete();
       // caller is responsible for navigation after this resolves
-    } catch {
+    } catch (err) {
+      // keep the confirm step open so the user can retry
+      setActionError(describeError(err, 'Delete failed'));
       setIsDeletingTemplate(false);
-      setConfirmingDelete(false);
     }
   }, [onDelete]);
 
   return (
     <header className="mb-8">
       <nav className="mb-6 text-sm text-gray-500">
-        <a href={backHref} className="hover:text-brand-600">
+        <a href={getSafeHref(backHref)} className="hover:text-brand-600">
           Templates
         </a>{' '}
         / {name}
@@ -137,6 +184,12 @@ export function TemplateHeader({
           </button>
         )}
       </div>
+
+      {actionError && (
+        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {/* Description + badge + actions */}
       <div className="mt-2 flex flex-wrap items-center gap-3">
