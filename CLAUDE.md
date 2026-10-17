@@ -75,8 +75,8 @@ src/
   LBRN2/XCS wrappers normalize tokens (`lib/utils/tokens.ts`) before calling the sibling
   `unofficial-*-writer` libraries, which use bare names; either shape is accepted on input
 - Substitution is a single pass with a function replacer: values are literal (no `$` patterns) and
-  never re-scanned for tokens. SVG and LBRN2 values are XML-escaped; XCS is JSON, so `$` is doubled
-  to survive the writer's `replaceAll`
+  never re-scanned for tokens. SVG and LBRN2 values are XML-escaped; XCS is JSON, and
+  `unofficial-xcs-writer` >= 0.8.3 already inserts values literally in a single pass
 - Regex-escaped during matching to handle special chars in token names
 
 ### Image Templating (IMAGE format)

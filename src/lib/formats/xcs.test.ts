@@ -12,7 +12,7 @@ import type { TextTemplateVariable } from '../../types';
 describe('renderXcsFile', () => {
   const variable: TextTemplateVariable = { token: '{{Name}}', label: 'Name', defaultValue: '' };
 
-  it('passes bare tokens, literal values, and the font map to the writer', () => {
+  it('passes bare tokens, unmodified values, and the font map to the writer', () => {
     const fonts = { Arial: new ArrayBuffer(4) };
     renderXcsFile(new ArrayBuffer(0), [variable], { '{{Name}}': "$' $$ $&" }, fonts);
 
@@ -23,8 +23,7 @@ describe('renderXcsFile', () => {
       Record<string, ArrayBuffer>,
     ];
     expect(variables[0].token).toBe('Name');
-    // The writer's String.replaceAll turns "$$" back into "$".
-    expect(values.Name).toBe("$$' $$$$ $$&");
+    expect(values.Name).toBe("$' $$ $&");
     expect(passedFonts).toBe(fonts);
   });
 });

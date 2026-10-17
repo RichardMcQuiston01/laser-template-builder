@@ -44,16 +44,14 @@ export function renderXcsFile(
   values: Record<string, string>,
   fonts?: Record<string, ArrayBuffer>,
 ): Uint8Array {
-  // The writer expects bare tokens and inserts values with String.replaceAll,
-  // which expands `$` patterns; doubling `$` makes values literal.
+  // The writer expects bare token names.
   const bareVariables = variables.map((variable) => ({
     ...variable,
     token: toBareToken(variable.token),
   }));
-  const literalValues: Record<string, string> = {};
+  const bareValues: Record<string, string> = {};
   for (const variable of variables) {
-    const value = values[variable.token] ?? variable.defaultValue ?? '';
-    literalValues[toBareToken(variable.token)] = value.replace(/\$/g, '$$$$');
+    bareValues[toBareToken(variable.token)] = values[variable.token] ?? variable.defaultValue ?? '';
   }
-  return xcsRender(buffer, bareVariables, literalValues, fonts);
+  return xcsRender(buffer, bareVariables, bareValues, fonts);
 }
