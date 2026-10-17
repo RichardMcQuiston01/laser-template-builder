@@ -1,7 +1,7 @@
 {
   "name": "laser-template-builder",
   "version": "0.3.1",
-  "description": "A framework-agnostic React component library for building laser cutter template editors \u2014 supports SVG, LightBurn, and XCS formats with token-based variable substitution and image overlay placement.",
+  "description": "A framework-agnostic React component library for building laser cutter template editors — supports SVG, LightBurn, and XCS formats with token-based variable substitution and image overlay placement.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@richardmcquiston01/unofficial-lb-writer": "^0.2.0",
-    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.1"
+    "@richardmcquiston01/unofficial-xcs-writer": "^0.8.3"
   },
   "sideEffects": false,
   "peerDependencies": {
