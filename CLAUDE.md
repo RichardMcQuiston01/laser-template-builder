@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Build**: `npm run build` — Compiles TypeScript to ESM/CJS with type declarations
 - **Watch mode**: `npm run dev` — Builds and watches for changes (useful during development)
+- **Typecheck**: `npm run typecheck` — `tsc --noEmit`
+- **Test**: `npm test` — Vitest (jsdom)
 
 ## Project Overview
 
@@ -69,10 +71,13 @@ src/
 
 ### Token Substitution
 - Tokens are literal strings: `{{tokenName}}` in file content
-- `TemplateVariable.token` is braced (`{{tokenName}}`) for SVG (local `extractTokens`), but
-  bare (`tokenName`, no braces) for LBRN2/XCS, since both delegate token extraction to their
-  respective `unofficial-*-writer` sibling libraries, which use the bare-name convention
-- Regex-escaped during replacement to handle special chars in token names
+- `TemplateVariable.token` is braced (`{{tokenName}}`) in the public API for every format. The
+  LBRN2/XCS wrappers normalize tokens (`lib/utils/tokens.ts`) before calling the sibling
+  `unofficial-*-writer` libraries, which use bare names; either shape is accepted on input
+- Substitution is a single pass with a function replacer: values are literal (no `$` patterns) and
+  never re-scanned for tokens. SVG and LBRN2 values are XML-escaped; XCS is JSON, so `$` is doubled
+  to survive the writer's `replaceAll`
+- Regex-escaped during matching to handle special chars in token names
 
 ### Image Templating (IMAGE format)
 - Stores image file as a binary blob; textbox layout as `ImageTextboxVariable[]`

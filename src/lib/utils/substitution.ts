@@ -1,30 +1,51 @@
 // Replaces {{token}} placeholders in a string with provided values.
 
 import type { TemplateVariable } from '../../types';
+import { toBareToken, toBracedToken } from './tokens';
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Applies variable substitution to a raw template string.
  *
+ * Only whole `{{name}}` placeholders are replaced. A variable token may be
+ * stored braced (`{{name}}`) or bare (`name`); both match `{{name}}`. Values
+ * are inserted literally (no `$` replacement patterns) in a single pass, so
+ * inserted text is never scanned for further tokens.
+ *
  * @param source         - Raw file content (SVG XML, LightBurn XML, etc.)
  * @param variables      - Variable definitions from the template record.
  * @param values         - Map of token -> user-supplied value.
+ * @param transformValue - Optional hook applied to each value before insertion
+ *                         (e.g. XML escaping).
  * @returns              - The content with all known tokens replaced.
  */
 export function applySubstitution(
   source: string,
   variables: TemplateVariable[],
   values: Record<string, string>,
+  transformValue: (value: string) => string = (value) => value,
 ): string {
-  let result = source;
+  const replacementByPlaceholder = new Map<string, string>();
 
   for (const variable of variables) {
-    const replacement = values[variable.token] ?? variable.defaultValue;
-    // Escape special regex characters inside the token string.
-    const escaped = variable.token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    result = result.replace(new RegExp(escaped, 'g'), replacement);
+    if (toBareToken(variable.token) === '') continue;
+    const rawValue = values[variable.token] ?? variable.defaultValue ?? '';
+    replacementByPlaceholder.set(toBracedToken(variable.token), transformValue(rawValue));
   }
 
-  return result;
+  if (replacementByPlaceholder.size === 0) return source;
+
+  const alternation = Array.from(replacementByPlaceholder.keys())
+    .map(escapeRegExp)
+    .join('|');
+
+  return source.replace(
+    new RegExp(alternation, 'g'),
+    (placeholder) => replacementByPlaceholder.get(placeholder) ?? placeholder,
+  );
 }
 
 /**

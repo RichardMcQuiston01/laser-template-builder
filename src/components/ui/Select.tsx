@@ -1,4 +1,4 @@
-import { type SelectHTMLAttributes, forwardRef } from 'react';
+import { type SelectHTMLAttributes, forwardRef, useId } from 'react';
 
 interface SelectOption {
   value: string;
@@ -14,7 +14,8 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className = '', id, ...rest }, ref) => {
-    const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const selectId = id ?? generatedId;
 
     return (
       <div className="flex flex-col gap-1">
@@ -39,7 +40,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...rest}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="">
               {placeholder}
             </option>
           )}

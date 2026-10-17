@@ -28,6 +28,7 @@ type Step = 'upload' | 'details' | 'placement';
 
 export function UploadForm({ categories, onUpload, onSave, imageBaseUrl = '' }: UploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadRequestIdRef = useRef(0);
 
   const [step, setStep] = useState<Step>('upload');
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
@@ -46,24 +47,32 @@ export function UploadForm({ categories, onUpload, onSave, imageBaseUrl = '' }: 
   const imageFilename = uploadResult
     ? uploadResult.filePath.replace(/\\/g, '/').split('/').pop() ?? ''
     : '';
-  const imagePreviewUrl = imageBaseUrl ? `${imageBaseUrl}/${imageFilename}` : `/${imageFilename}`;
+  const encodedImageFilename = encodeURIComponent(imageFilename);
+  const imagePreviewUrl = imageBaseUrl ? `${imageBaseUrl}/${encodedImageFilename}` : `/${encodedImageFilename}`;
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    // Clear the input so choosing the same file again (e.g. after a failure) fires change.
+    input.value = '';
 
+    uploadRequestIdRef.current += 1;
+    const requestId = uploadRequestIdRef.current;
     setIsUploading(true);
     setUploadError(null);
     try {
       const result = await onUpload(file);
+      if (requestId !== uploadRequestIdRef.current) return; // a newer upload superseded this one
       setUploadResult(result);
       setVariables(result.detectedVariables);
       setName(file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' '));
       setStep('details');
     } catch (err) {
+      if (requestId !== uploadRequestIdRef.current) return;
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
-      setIsUploading(false);
+      if (requestId === uploadRequestIdRef.current) setIsUploading(false);
     }
   }, [onUpload]);
 

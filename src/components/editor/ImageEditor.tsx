@@ -5,6 +5,7 @@ import { ImagePlacementEditor } from './ImagePlacementEditor';
 import { isTextboxVariable } from '../../lib/utils/variables';
 import { renderImageAsSvg, renderImageAsPng } from '../../lib/formats/imageExport';
 import { computeFitFontSize } from '../../lib/utils/fitText';
+import { downloadBlob, sanitizeFilename } from '../../lib/utils/download';
 import type { Template, ImageTextboxVariable } from '../../types';
 
 interface ImageEditorProps {
@@ -15,25 +16,42 @@ interface ImageEditorProps {
   onSaveBoxes: (boxes: ImageTextboxVariable[]) => Promise<void>;
 }
 
+function getTextboxes(template: Template): ImageTextboxVariable[] {
+  return template.variables.filter(isTextboxVariable) as ImageTextboxVariable[];
+}
+
 export function ImageEditor({ template, imageUrl, onSaveBoxes }: ImageEditorProps) {
-  const [boxes, setBoxes] = useState<ImageTextboxVariable[]>(
-    template.variables.filter(isTextboxVariable) as ImageTextboxVariable[],
-  );
+  const [boxes, setBoxes] = useState<ImageTextboxVariable[]>(() => getTextboxes(template));
   const [isEditingBoxes, setIsEditingBoxes] = useState(false);
   const [isSavingBoxes, setIsSavingBoxes] = useState(false);
   const [saveBoxesError, setSaveBoxesError] = useState<string | null>(null);
-  const [savedBoxes, setSavedBoxes] = useState<ImageTextboxVariable[]>(
-    template.variables.filter(isTextboxVariable) as ImageTextboxVariable[],
-  );
+  const [savedBoxes, setSavedBoxes] = useState<ImageTextboxVariable[]>(() => getTextboxes(template));
 
-  const [values, setValues] = useState<Record<string, string>>(
-    Object.fromEntries(boxes.map((v) => [v.token, v.defaultValue])),
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(getTextboxes(template).map((v) => [v.token, v.defaultValue])),
   );
   const [fontSizes, setFontSizes] = useState<Record<string, number>>({});
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [isExportingSvg, setIsExportingSvg] = useState(false);
   const [isExportingPng, setIsExportingPng] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  // Reset everything derived from the template/image when either changes, so a
+  // router that reuses this component never mixes one template's state with another's.
+  const sourceKey = `${template.id}\u0000${imageUrl}`;
+  const [trackedSourceKey, setTrackedSourceKey] = useState(sourceKey);
+  if (trackedSourceKey !== sourceKey) {
+    const nextBoxes = getTextboxes(template);
+    setTrackedSourceKey(sourceKey);
+    setBoxes(nextBoxes);
+    setSavedBoxes(nextBoxes);
+    setValues(Object.fromEntries(nextBoxes.map((v) => [v.token, v.defaultValue])));
+    setFontSizes({});
+    setNaturalSize(null);
+    setIsEditingBoxes(false);
+    setSaveBoxesError(null);
+    setExportError(null);
+  }
 
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,22 +69,14 @@ export function ImageEditor({ template, imageUrl, onSaveBoxes }: ImageEditorProp
     const newSizes: Record<string, number> = {};
     for (const v of boxes) {
       const boxWidthPx = (v.width / 100) * containerWidth;
-      const boxHeightPx = (v.height / 100) * containerWidth * (imgRef.current.clientHeight / imgRef.current.clientWidth);
+      const aspectRatio = imgRef.current.clientWidth ? imgRef.current.clientHeight / imgRef.current.clientWidth : 0;
+      const boxHeightPx = (v.height / 100) * containerWidth * aspectRatio;
       const text = values[v.token] ?? v.defaultValue;
       newSizes[v.token] = computeFitFontSize(text || ' ', boxWidthPx, boxHeightPx, v.properties?.fontFamily ?? 'sans-serif');
     }
     setFontSizes(newSizes);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, naturalSize, boxes]);
-
-  const triggerDownload = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const handleSaveBoxes = useCallback(async () => {
     setIsSavingBoxes(true);
@@ -89,7 +99,7 @@ export function ImageEditor({ template, imageUrl, onSaveBoxes }: ImageEditorProp
     try {
       const svg = await renderImageAsSvg(imageUrl, naturalSize.w, naturalSize.h, boxes, values);
       const blob = new Blob([svg], { type: 'image/svg+xml' });
-      triggerDownload(blob, `${template.name}.svg`);
+      downloadBlob(blob, sanitizeFilename(template.name, '.svg'));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'SVG export failed');
     } finally {
@@ -104,7 +114,7 @@ export function ImageEditor({ template, imageUrl, onSaveBoxes }: ImageEditorProp
     try {
       const svg = await renderImageAsSvg(imageUrl, naturalSize.w, naturalSize.h, boxes, values);
       const blob = await renderImageAsPng(svg, naturalSize.w, naturalSize.h);
-      triggerDownload(blob, `${template.name}.png`);
+      downloadBlob(blob, sanitizeFilename(template.name, '.png'));
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'PNG export failed');
     } finally {

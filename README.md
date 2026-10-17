@@ -287,8 +287,15 @@ const output = renderLightBurnFile(xmlString, variables, values);
 const valid = validateXcs(arrayBuffer); // boolean
 const json = readXcsFile(arrayBuffer); // raw JSON string
 const tokens = extractXcsTokens(arrayBuffer); // string[]
-const bytes = renderXcsFile(arrayBuffer, variables, values); // Uint8Array
+const bytes = renderXcsFile(arrayBuffer, variables, values, fonts); // Uint8Array
 ```
+
+Notes:
+
+- Tokens are braced (`{{name}}`) for every format. The LightBurn and XCS renderers also accept bare names.
+- Values are inserted literally in a single pass (no `$` patterns, no re-scanning) and are XML-escaped for SVG and LightBurn.
+- `renderXcsFile`'s optional `fonts` (`Record<string, ArrayBuffer>`, family → font bytes) is used when changed text is laid out again; omitted families fall back to the writer's default font.
+- `validateSvg` is a structural check on the root element, not a sanitizer. Sanitize SVG before inlining it in a page.
 
 ### Image export
 
@@ -298,6 +305,8 @@ import { renderImageAsSvg, renderImageAsPng } from "laser-template-builder";
 const svg = await renderImageAsSvg(imageUrl, naturalW, naturalH, boxes, values);
 const png = await renderImageAsPng(svg, naturalW, naturalH); // Blob
 ```
+
+`imageUrl` must be `http:`, `https:`, `blob:`, or relative; the response must be an `image/*` under 25 MB. PNG output is limited to 16384 px per side and 64 megapixels; export SVG for larger images.
 
 ### Font sizing
 
