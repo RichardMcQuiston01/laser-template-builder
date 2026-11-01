@@ -54,5 +54,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/RichardMcQuiston01/laser-template-builder.git"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://www.paypal.com/ncp/payment/GAGZH3DEEDRAC"
   }
 }
